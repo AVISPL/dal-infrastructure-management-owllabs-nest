@@ -1,0 +1,47 @@
+models:
+  - model:
+      name: Generic
+      vendor: OwlLabs
+      filter: get("deviceId") != null
+      node: data
+      mapping:
+        type: "AV Devices"
+        category: ""
+        serialNumber: at("/serialNumber")?.asText()
+        deviceId: at("/deviceId")?.asText()
+        deviceName: at("/deviceName")?.asText()
+        deviceMake: "Owl Labs"
+        deviceModel: at("/deviceType")?.asText()
+        deviceOnline: at("/iotStatus")?.asText()?.toLowerCase().equals("online") #Online|Offline|In Meeting
+      properties:
+        MACAddress: at("/macAddress")
+        FirmwareVersion: at("/firmwareVersion")
+        Location: at("/location")
+        LastCheckedInDate: at("/lastCheckedinDate")
+        RegisteredEmail: at("/registeredEmail")
+        IoTStatus: at("/iotStatus")
+  - model:
+      name: Details
+      vendor: OwlLabs
+      properties:
+        MACAddress: at("/data/macAddress")
+        FirmwareVersion: at("/data/firmwareVersion")
+        Location: at("/data/location")
+        LastCheckedInDate: at("/data/lastCheckedinDate")
+        RegisteredEmail: at("/data/registeredEmail")
+        IoTStatus: at("/data/iotStatus")
+
+        VideoSettings#VerticallyFlipVideo: at("/data/settings/video/verticallyFlipVideo")
+        VideoSettings#PanoStrip: at("/data/settings/video/panoStrip")
+        VideoSettings#PanoStripLocation: at("/data/settings/video/panoStripLocation")
+        VideoSettings#ShowIgnoreZoneOnPanoStrip: at("/data/settings/video/showIgnoreZoneOnPanoStrip")
+        VideoSettings#IgnoreTVs: at("/data/settings/video/ignoreTVs")
+        VideoSettings#VideoMode: at("/data/settings/video/videoMode")
+
+        AudioSettings#SpeakerBoost: at("/data/settings/audio/speakerBoost")
+        AudioSettings#NoiseReduction: at("/data/settings/audio/noiseReduction")
+        AudioSettings#MicrophoneInputVolume: at("/data/settings/audio/microphoneInputVolume")
+        AudioSettings#DoubleTalk: at("/data/settings/audio/doubleTalk")
+
+        GeneralSettings#ButtonFunction: at("/data/settings/general/buttonFunction")
+        GeneralSettings#BluetoothPasscode: at("/data/settings/general/bluetoothPasscode")
