@@ -19,6 +19,7 @@ import com.avispl.symphony.dal.util.StringUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import java.io.IOException;
@@ -73,12 +74,31 @@ public class OwlLabsAggregatorCommunicator extends RestCommunicator implements A
 
     @Override
     public void controlProperty(ControllableProperty controllableProperty) throws Exception {
+        String deviceId = controllableProperty.getDeviceId();
+        String property = controllableProperty.getProperty();
 
+        switch (property) {
+            case "Reboot":
+                sendReboot(deviceId);
+                break;
+            case "Hoot":
+                sendHoot(deviceId);
+                break;
+            default:
+                logger.warn("Unable to send control command to the device: unknown control property: " + property);
+                break;
+        }
     }
 
     @Override
     public void controlProperties(List<ControllableProperty> list) throws Exception {
+        if (CollectionUtils.isEmpty(list)) {
+            throw new IllegalArgumentException("OwlLabs Nest: Controllable properties cannot be null or empty");
+        }
 
+        for (ControllableProperty controllableProperty : list) {
+            controlProperty(controllableProperty);
+        }
     }
 
     @Override
@@ -135,10 +155,11 @@ public class OwlLabsAggregatorCommunicator extends RestCommunicator implements A
 
     @Override
     protected HttpHeaders putExtraRequestHeaders(HttpMethod httpMethod, String uri, HttpHeaders headers) throws Exception {
+        headers.set("Accept", "application/json");
         if (uri.contains(Constant.URI.AUTH)) {
             headers.set("Content-Type", "application/x-www-form-urlencoded");
-            headers.set("Accept", "application/json");
         } else {
+            headers.set("Content-Type", "application/json");
             headers.set("Authorization", "Bearer " + authorization.getAccessToken());
         }
         return super.putExtraRequestHeaders(httpMethod, uri, headers);
@@ -171,7 +192,7 @@ public class OwlLabsAggregatorCommunicator extends RestCommunicator implements A
         JsonNode deviceResponse = doGet(String.format(Constant.URI.DEVICE, device.getDeviceId()), JsonNode.class);
         aggregatedDeviceProcessor.applyProperties(device.getProperties(), deviceResponse, "Details");
 
-        boolean deviceOnline = deviceResponse.at("/iotStatus").asText().equalsIgnoreCase("online");
+        boolean deviceOnline = deviceResponse.at("/data/iotStatus").asText().equalsIgnoreCase("online");
         device.setDeviceOnline(deviceOnline);
     }
 
@@ -205,5 +226,41 @@ public class OwlLabsAggregatorCommunicator extends RestCommunicator implements A
             normalizedUptime.append(seconds).append(" second(s)");
         }
         return normalizedUptime.toString().trim();
+    }
+
+    /**
+     * Send reboot command to the device
+     *
+     * @param deviceId id of the target device
+     * */
+    private void sendReboot(String deviceId) throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("command", "reboot");
+        request.put("reason", "Scheduled maintenance");
+        JsonNode response = doPost(String.format(Constant.URI.CONTROL, deviceId), request, JsonNode.class);
+        if (response == null) {
+            throw new RuntimeException("Reboot command failed: reboot command response is null");
+        }
+        if (!response.at("/success").asBoolean()) {
+            throw new RuntimeException("Reboot command failed: " + response.at("/message").asText());
+        }
+    }
+
+    /**
+     * Send hoot command to the device
+     *
+     * @param deviceId is of the target device
+     */
+    private void sendHoot(String deviceId) throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("command", "hoot");
+        request.put("reason", "Device checkup");
+        JsonNode response = doPost(String.format(Constant.URI.CONTROL, deviceId), request, JsonNode.class);
+        if (response == null) {
+            throw new RuntimeException("Hoot command failed: hoot command response is null");
+        }
+        if (!response.at("/success").asBoolean()) {
+            throw new RuntimeException("Hoot command failed: " + response.at("/message").asText());
+        }
     }
 }

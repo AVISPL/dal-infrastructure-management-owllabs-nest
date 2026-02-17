@@ -20,6 +20,19 @@ models:
         LastCheckedInDate: at("/lastCheckedinDate")
         RegisteredEmail: at("/registeredEmail")
         IoTStatus: at("/iotStatus")
+        Reboot: "N/A"
+        Hoot: "N/A"
+      control:
+        Reboot:
+          type: Button
+          gracePeriod: 120000
+          label: Reboot
+          labelPressed: Rebooting
+        Hoot:
+          type: Button
+          gracePeriod: 0
+          label: Hoot
+          labelPressed: Hoot-hoot!
   - model:
       name: Details
       vendor: OwlLabs
